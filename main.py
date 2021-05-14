@@ -25,12 +25,12 @@ class Cluster:
         self.objects = objects
 
     # Метод нахождения расстояния между кластерами (мин/макс)
-    def get_distance(self, cluster, distance_type="min"):
+    def get_distance(self, cluster, is_min_distance=True):
         base_dist = euclidean_dist_2d(self.objects[0], cluster.objects[0])
         for obj in self.objects:
             for other_object in cluster.objects:
                 distance = euclidean_dist_2d(obj, other_object)
-                if distance_type == 'min':
+                if is_min_distance:
                     if distance < base_dist:
                         base_dist = distance
                 else:
@@ -39,23 +39,21 @@ class Cluster:
         return base_dist
 
 
-# Функция кластерного анализа (single - ближайший сосед, complete - дальний)
-def hcluster(data, method="single"):
-    if method == 'single':
-        distance_type = 'min'
-    elif method == 'complete':
-        distance_type = 'max'
+# Функция кластерного анализа
+# (по умолчанию - ближайший сосед, is_complete - дальний)
+def hcluster(data, is_complete=False):
+    is_min_distance = not is_complete
     clusters = [Cluster([data[i]], 0, i) for i in range(len(data))]
     clusters_merge_matrix = []
     cluster_name = len(clusters)
 
     while len(clusters) > 1:
         closest_clusters = (0, 1)
-        min_distance = clusters[0].get_distance(clusters[1], distance_type)
+        min_distance = clusters[0].get_distance(clusters[1], is_min_distance=is_min_distance)
         length = len(clusters)
         for i in range(length):
             for j in range(i + 1, length):
-                dist = clusters[i].get_distance(clusters[j], distance_type)
+                dist = clusters[i].get_distance(clusters[j], is_min_distance=is_min_distance)
                 if dist < min_distance:
                     min_distance = dist
                     closest_clusters = (i, j)
@@ -83,13 +81,12 @@ def get_report_string(cluster_matrix, labels):
     for index, label in enumerate(labels):
         cluster_dict[index] = label
     for row in cluster_matrix:
-        cluster_dict[len(cluster_dict)] = "{},{}".format(cluster_dict[row[0]], cluster_dict[row[1]])
+        cluster_dict[len(cluster_dict)] = f"{cluster_dict[row[0]]},{cluster_dict[row[1]]}"
 
-        report_string += "Кластер ({}) и ({}) объединяются в  ({}).\nРасстояние равно {:.2f}\n\n".format(
-            cluster_dict[row[0]],
-            cluster_dict[row[1]],
-            cluster_dict[len(cluster_dict) - 1],
-            row[2])
+        report_string += f"Кластер ({cluster_dict[row[0]]}) и" \
+                         f" ({cluster_dict[row[1]]}) объединяются в" \
+                         f" ({cluster_dict[len(cluster_dict) - 1]}).\n" \
+                         f"Расстояние равно {row[2]:.2f}\n\n"
     return report_string
 
 
@@ -102,7 +99,7 @@ def custom_dendrogram(*args, **kwargs):
             x = 0.5 * sum(i[1:3])
             y = d[1]
             plt.plot(x, y, 'ro')
-            plt.annotate("%.3g" % y, (x, y), xytext=(0, -8),
+            plt.annotate(f"{y:.3g}", (x, y), xytext=(0, -8),
                          textcoords='offset points',
                          va='top', ha='center')
     return ddata
@@ -235,7 +232,7 @@ class Window(Tk):
             self.dataframe.columns = ["labels", "X", "Y"]
             labels = self.dataframe["labels"].tolist()
             data = self.dataframe[["X", "Y"]].values.tolist()
-            cluster_single = hcluster(data, method='single')
+            cluster_single = hcluster(data)
             single_string = get_report_string(cluster_single, labels)
 
             self.single_cluster_text.configure(state=NORMAL)
@@ -243,7 +240,7 @@ class Window(Tk):
             self.single_cluster_text.insert(END, single_string)
             self.single_cluster_text.configure(state=DISABLED)
 
-            cluster_complete = hcluster(data, method='complete')
+            cluster_complete = hcluster(data, is_complete=True)
             complete_string = get_report_string(cluster_complete, labels)
             self.complete_cluster_text.configure(state=NORMAL)
             self.complete_cluster_text.delete(1.0, END)
