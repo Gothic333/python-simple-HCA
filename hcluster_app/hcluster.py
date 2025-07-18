@@ -27,6 +27,7 @@ def hcluster(data, method='single'):
 
     while len(clusters) > 1:
         min_distance = float('inf')
+        closest_1, closest_2 = 0, 1
         for i in range(len(clusters) - 1):
             for j in range(i + 1, len(clusters)):
                 dist = clusters[i].get_distance(clusters[j], dist_compare=type_map[method])

@@ -69,6 +69,6 @@ def draw_graphics(data, single_clusters, complete_clusters, labels):
     plt.ylabel('P')
 
     fig_manager = plt.get_current_fig_manager()
-    fig_manager.window.state('zoomed')
-    fig_manager.set_window_title('Графики')
+    fig_manager.window.state('zoomed') # type: ignore
+    fig_manager.set_window_title('Графики') # type: ignore
     plt.show()
